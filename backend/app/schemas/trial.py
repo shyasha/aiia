@@ -101,3 +101,13 @@ class StudyArmOut(BaseModel):
     arm_type: str = "TREATMENT"
     class Config:
         from_attributes = True
+
+class InterventionOut(BaseModel):
+    id: str
+    trial_id: str
+    name: str
+    type: Optional[str] = None
+    dosage: Optional[str] = None
+    formulation: Optional[str] = None
+    class Config:
+        from_attributes = True

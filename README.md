@@ -1,383 +1,229 @@
-# AIIA Clinical Trials Dashboard (CTMS)
+# AIIA Clinical Trial Management System (CTMS)
 
-> **A real-time, cloud-ready Clinical Trial Management System for Ayurveda research, with CDISC/FHIR interoperability, role-based KPIs, ethics and regulatory tracking, and integrated pharmacovigilance.**
+A web-based Clinical Trial Management System (CTMS) designed for Ayurveda clinical research, supporting protocol lifecycle tracking, participant management, adverse event surveillance, and workflow health monitoring.
 
-Designed to support GCP-aligned clinical research workflows. This software supports compliance workflows but does not itself constitute legal or regulatory certification.
+Built with **FastAPI**, **Next.js**, **SQLAlchemy**, and **PostgreSQL/SQLite**, the platform demonstrates standardized clinical trial workflows with CDISC SDTM domain mapping, FHIR R4 interoperability, and an operational AI co-pilot for process tracking.
 
 ---
 
-## 🏗️ Architecture
+## System Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
-│                        USERS                                │
-│   Admin │ PI │ Coordinator │ Data Manager │ Ethics │ PV     │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
+│                       Client Browser                        │
+│   Investigators │ Study Coordinators │ PV Officers │ Admins │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              NEXT.JS FRONTEND (React/TypeScript)            │
-│              Tailwind CSS │ shadcn/ui │ Recharts            │
-└────────────────────────┬────────────────────────────────────┘
-                         │ REST API
-                         ▼
+│            Frontend Application (Next.js 14 / React)        │
+│    App Router │ TypeScript │ Tailwind CSS │ Responsive UI   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTP / REST (JSON)
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              FASTAPI BACKEND (Python)                       │
-│   JWT/RBAC │ Pydantic │ SQLAlchemy │ OpenAPI               │
-├─────────────┬─────────────┬─────────────────────────────────┤
-│  CORE CTMS  │ CLINICAL    │ COMPLIANCE & SAFETY             │
-│  Trials     │ eCRF/EDC    │ Ethics/IEC                      │
-│  Sites      │ Validation  │ Regulatory/CTRI                 │
-│  Participants│ CDISC      │ NDCT Rules 2019                 │
-│  Visits     │ FHIR R4    │ AE/SAE/PV                       │
-│  Randomize  │            │ Audit Trail                      │
-└─────────────┴──────┬──────┴─────────────────────────────────┘
-                     │
-                     ▼
+│             Backend API Services (FastAPI / Python)         │
+│   Authentication (JWT/RBAC) │ Pydantic Validation │ OpenAPI │
+├──────────────────────────────┬──────────────────────────────┤
+│  Core CTMS                   │ Safety & Workflow            │
+│  - Trials & Interventions    │ - Pharmacovigilance (AE/SAE) │
+│  - Participants & Consent    │ - Operational AI Co-Pilot    │
+│  - Visits & Milestones       │ - Audit Logging & CDISC/FHIR │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Async ORM (SQLAlchemy 2.0)
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              POSTGRESQL DATABASE                            │
-│   40+ Tables │ UUID PKs │ Audit Logs │ Soft Deletes        │
+│                     Database Layer                          │
+│    PostgreSQL 16 (Production) / SQLite + aiosqlite (Dev)    │
+│    Alembic Migrations │ Soft Deletes │ Relational Schema    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📋 Prerequisites
+## Tech Stack
 
-- **Docker & Docker Compose** (recommended)
-- OR:
-  - Python 3.11+
-  - Node.js 20+
-  - PostgreSQL 16+
-
----
-
-## 🚀 Quick Start (Docker)
-
-```bash
-# Clone and enter the project
-cd aiia-ctms
-
-# Copy environment config
-cp .env.example .env
-
-# Start all services
-docker compose up --build
-
-# The application will:
-# 1. Start PostgreSQL
-# 2. Run database migrations
-# 3. Seed demo data
-# 4. Start backend at http://localhost:8000
-# 5. Start frontend at http://localhost:3000
-```
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Lucide React, Axios
+- **Backend**: FastAPI, Python 3.11+, SQLAlchemy 2.0 (Async), Pydantic v2, Alembic
+- **Database**: 
+  - Local Development: SQLite via `aiosqlite` (zero-dependency setup)
+  - Production / Staging: PostgreSQL 16 via `asyncpg`
+- **AI Integration**: Anthropic Claude API (`ask_claude`) for non-clinical operational bottleneck detection and alert message phrasing
+- **Standards & Formats**: CDISC SDTM dataset export (DM, SV, AE), FHIR R4 resource representations
 
 ---
 
-## 🛠️ Manual Development Setup
+## Core Capabilities
 
-### Database
+### 1. Trial & Protocol Lifecycle Management
+- Structured trial registry tracking phase, therapeutic area, Ayurveda system, study arms, and planned sample sizes.
+- Intervention catalog: formulation, dosage, duration, and route administration records per trial.
+- Milestone tracking: protocol clearance, ethics approval, recruitment targets, and completion milestones.
 
-```bash
-# Create PostgreSQL database
-createdb aiia_ctms
+### 2. Participant & Visit Tracking
+- Participant enrollment with automated pseudonymous trial identifiers (`AIIA-001-xxx`).
+- Informed consent recording and eligibility screening logs.
+- Longitudinal visit schedules with automated overdue detection and window calculations.
 
-# Or with Docker
-docker run -d --name aiia-db \
-  -e POSTGRES_USER=aiia \
-  -e POSTGRES_PASSWORD=aiia_dev_password \
-  -e POSTGRES_DB=aiia_ctms \
-  -p 5432:5432 \
-  postgres:16-alpine
-```
+### 3. Pharmacovigilance & Safety Surveillance
+- Adverse Event (AE) and Serious Adverse Event (SAE) reporting with CTCAE-style severity classification.
+- **Suspected Causative Drug / Intervention Attribution**: Allows coordinators and clinicians to link reported AEs directly to registered trial interventions via foreign key relationships.
+- WHO-UMC causality assessment logging and regulatory escalation tracking.
 
-### Backend
+### 4. AI Operational Co-Pilot
+- Continuous process monitor that scans:
+  - Adverse Events pending clinical review beyond the standard 5-day review window.
+  - Scheduled participant visits that have passed their target date.
+  - Trial milestones approaching deadline within 7 days or past due.
+- Claude-powered alert generation: translates operational data into clear, actionable, non-clinical alert notifications categorized by severity (`high`, `medium`, `low`).
+- Dedicated AI Co-Pilot dashboard (`/dashboard/copilot`) with manual on-demand health scan triggers.
+
+### 5. Standards, Auditability & Interoperability
+- **CDISC SDTM Export**: Serializes trial records into standard clinical data domains (Demographics `DM`, Subject Visits `SV`, Adverse Events `AE`).
+- **FHIR R4 Interfaces**: RESTful endpoints exposing Patient, ResearchStudy, ResearchSubject, Observation, and AdverseEvent resources.
+- **Append-Only Audit Trail**: Captures user actions, timestamps, affected entities, and state changes for compliance tracing.
+
+---
+
+## Local Development Setup
+
+### Prerequisites
+- **Python 3.11+**
+- **Node.js 20+** and **npm**
+- (Optional) **Docker & Docker Compose** for containerized PostgreSQL execution
+
+---
+
+### Option A: Local Run (Quick Start with SQLite)
+
+The default `.env` configuration in `backend/` uses SQLite, enabling local execution without installing an external database engine.
+
+#### 1. Backend Setup
 
 ```bash
 cd backend
 
-# Create virtual environment
+# Create and activate a Python virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Windows:
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy env file
-cp ../.env.example .env
-# Edit .env with your database URL
-
-# Run migrations
+# Run database migrations
 alembic upgrade head
 
-# Seed demo data
-python -m app.seed
-
-# Start server
-uvicorn app.main:app --reload --port 8000
+# Start the FastAPI server
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Frontend
+The API will be accessible at [http://localhost:8000](http://localhost:8000). Interactive Swagger documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+#### 2. Frontend Setup
+
+In a separate terminal:
 
 ```bash
 cd frontend
 
-# Install dependencies
+# Install Node dependencies
 npm install
 
-# Start development server
+# Start the development server
 npm run dev
+```
+
+The frontend application will be live at [http://localhost:3000](http://localhost:3000).
+
+---
+
+### Option B: Docker Compose (PostgreSQL Full Stack)
+
+To run the complete stack with a dedicated PostgreSQL 16 container:
+
+```bash
+# From the repository root
+cp .env.example .env
+
+# Build and launch all containers
+docker compose up --build
+```
+
+Docker Compose spins up:
+- `postgres`: PostgreSQL 16 container running on port `5432`
+- `backend`: FastAPI application on port `8000` (auto-applies migrations on launch)
+- `frontend`: Next.js web application on port `3000`
+
+---
+
+## Demo Accounts & Roles
+
+The system uses Role-Based Access Control (RBAC) enforced via JWT tokens and HTTP cookies. For evaluation and demo walkthroughs, pre-configured accounts are provided:
+
+| Role | Email | Password | Access Scope |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `admin@aiia.gov.in` | `Demo@12345` | Global administrative control, demo walkthrough, system config |
+| **Trial Admin** | `trialadmin@aiia.gov.in` | `Demo@12345` | Trial creation, protocol amendments, site allocations |
+| **Principal Investigator** | `pi@aiia.gov.in` | `Demo@12345` | Subject eligibility clearance, medical evaluations, AE reporting |
+| **Study Coordinator** | `coordinator@aiia.gov.in` | `Demo@12345` | Subject visits, eCRF data entry, operational scheduling |
+| **Pharmacovigilance Officer** | `pv@aiia.gov.in` | `Demo@12345` | Safety review, causality assessment, regulatory notifications |
+| **Data Manager** | `datamanager@aiia.gov.in` | `Demo@12345` | Data validation queries, CDISC / SDTM exports |
+| **Ethics Committee** | `ethics@aiia.gov.in` | `Demo@12345` | IEC submission review, approval certifications |
+| **Auditor / Viewer** | `auditor@aiia.gov.in` | `Demo@12345` | Read-only inspection of audit logs and trial records |
+
+---
+
+## Repository Structure
+
+```text
+aiia-ctms/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/          # REST route handlers (trials, visits, pharmacovigilance, copilot)
+│   │   ├── core/            # Database engine, JWT authentication, configuration
+│   │   ├── models/          # SQLAlchemy relational models
+│   │   ├── schemas/         # Pydantic validation schemas
+│   │   ├── services/        # Business logic (Claude wrapper, workflow scanner)
+│   │   ├── seed.py          # Database seeder script
+│   │   └── main.py          # FastAPI application entry point
+│   ├── migrations/          # Alembic database version scripts
+│   ├── tests/               # Backend pytest test suite
+│   ├── requirements.txt     # Python dependencies
+│   └── Dockerfile           # Backend container specification
+├── frontend/
+│   ├── app/
+│   │   ├── dashboard/       # Dashboard pages (overview, trials, participants, PV, copilot)
+│   │   ├── login/           # Authentication login page
+│   │   └── layout.tsx       # Root layout and theme providers
+│   ├── components/          # Reusable UI widgets and layout navigation
+│   ├── lib/                 # Axios client, date formatters, auth session helpers
+│   ├── package.json         # Frontend dependencies and scripts
+│   └── Dockerfile           # Frontend container specification
+├── docker-compose.yml       # Multi-container orchestration definition
+└── README.md                # Project documentation
 ```
 
 ---
 
-## 🔑 Demo Credentials
+## Verification & Testing
 
-| Role | Email | Password |
-|------|-------|----------|
-| **Super Admin** | admin@aiia.gov.in | Demo@12345 |
-| **Trial Admin** | trialadmin@aiia.gov.in | Demo@12345 |
-| **Principal Investigator** | pi@aiia.gov.in | Demo@12345 |
-| **Study Coordinator** | coordinator@aiia.gov.in | Demo@12345 |
-| **Data Manager** | datamanager@aiia.gov.in | Demo@12345 |
-| **Ethics Committee** | ethics@aiia.gov.in | Demo@12345 |
-| **PV Officer** | pv@aiia.gov.in | Demo@12345 |
-| **Regulatory Officer** | regulatory@aiia.gov.in | Demo@12345 |
-| **Auditor** | auditor@aiia.gov.in | Demo@12345 |
-| **Viewer** | viewer@aiia.gov.in | Demo@12345 |
-
----
-
-## 📦 Core Modules
-
-### Trial Management
-- Create and manage clinical trials with full lifecycle tracking
-- Protocol management with versioning
-- Study arms and interventions
-- Trial milestones and timeline
-
-### Site & Investigator Management
-- Multi-site trial support
-- Investigator assignment and tracking
-- Site performance KPIs
-
-### Participant Management
-- Pseudonymous participant IDs
-- Consent tracking
-- Screening and enrollment workflow
-- Randomization engine
-
-### Visits & Scheduling
-- Configurable visit definitions
-- Automated scheduling
-- Overdue visit detection
-- Visit compliance tracking
-
-### eCRF / EDC
-- Configurable electronic case report forms
-- Dynamic form rendering
-- Real-time validation
-- Data queries and quality scoring
-
-### Ethics / IEC
-- Ethics submission workflow
-- Approval tracking with expiry alerts
-- Protocol amendment management
-- Renewal tracking
-
-### Regulatory / CTRI
-- CTRI registration tracking
-- NDCT Rules 2019 compliance checklist
-- Regulatory deadline management
-
-### Pharmacovigilance
-- Adverse Event (AE) reporting
-- Serious Adverse Event (SAE) workflow
-- Causality assessment
-- Safety signal detection
-- Safety dashboards
-
-### CDISC Interoperability
-- CDASH-inspired data collection
-- SDTM-style export (CSV/JSON)
-- Configurable domain mappings
-
-### FHIR R4
-- Patient, ResearchStudy, ResearchSubject, Observation, AdverseEvent resources
-- RESTful FHIR endpoints
-
-### 🧠 Context Memory Engine (Graphify-Powered)
-- Multi-tenant isolated graph memory storage (`TenantGraphStorage`)
-- Deterministic and semantic extraction pipeline (`MemoryExtractionPipeline`)
-- Confidence tracking (`EXTRACTED` vs `INFERRED`) and provenance auditing
-- Multi-factor memory ranking (`MultiFactorRanker`) combining relevance, proximity, confidence, and recency decay
-- NetworkX / Graphify schema adapter (`GraphifyAdapter`)
-- REST APIs under `/api/v1/memory` (`/context`, `/ingest`, `/nodes`, `/forget`, `/decay`)
-- Persistent codebase knowledge graph in `graphify-out/` (interactive HTML, JSON, and Obsidian vault)
-
-### 🎭 Presentation Walkthrough & Demo Safeguards
-- Strictly restricted to designated demo account (`admin@aiia.gov.in`) via `/api/v1/demo/records`
-- Built-in interactive study walkthrough panels:
-  - **Protocol Review** (`/dashboard/study/protocol-review`)
-  - **Operational Handoff** (`/dashboard/study/operational-handoff`)
-  - **Data Safeguards** (`/dashboard/study/data-safeguards`)
-  - **Clinical Site Monitoring & SDV** (`/dashboard/study/clinical-monitoring`)
-  - **Pharmacovigilance & Safety Surveillance** (`/dashboard/study/safety-surveillance`)
-  - **CDISC SDTM Standards & Regulatory Export** (`/dashboard/study/cdisc-standards`)
-- Pre-seeded demo context memory graph and realistic trial milestone notifications
-
-### Analytics & Dashboards
-- Real-time KPIs from live database
-- Role-specific dashboards
-- Recruitment trends
-- Site performance comparison
-- Safety analytics
-
-### Audit Trail
-- Append-only audit log
-- All critical actions tracked
-- User, timestamp, action, entity, old/new values
-- Searchable audit viewer
-
----
-
-## 🔒 Security
-
-- JWT authentication with access/refresh tokens
-- Role-Based Access Control (RBAC) with 10 roles
-- Granular permissions enforced on backend
-- Pseudonymous participant IDs
-- Password hashing with bcrypt
-- CORS configuration
-- Request validation with Pydantic
-- Secure file upload validation
-- Environment-based secrets
-- MFA-ready architecture
-
----
-
-## 📡 API Documentation
-
-- **OpenAPI/Swagger**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Health Check**: http://localhost:8000/health
-
----
-
-## 🧪 Testing
+### Running Tests
 
 ```bash
-# Backend unit & memory system tests
+# Backend unit and schema test suite
 cd backend
-python -m pytest tests/test_memory_system.py -v
+python -m pytest -v
 
-# Run full test suite with PYTHONPATH
-PYTHONPATH=backend pytest tests/ -v
-
-# Frontend TypeScript type check
+# Frontend TypeScript type verification
 cd frontend
 npx tsc --noEmit
 ```
 
 ---
 
-## 🗺️ Codebase Knowledge Graph (Graphify)
+## Academic Research Disclaimer
 
-The codebase is indexed as a knowledge graph using [Graphify](https://github.com/safishamsi/graphify):
-
-- **Interactive Visualizer**: Open `graphify-out/graph.html` in any browser.
-- **Audit & Topology Report**: `graphify-out/GRAPH_REPORT.md` (732 nodes, 1,874 edges across 56 communities).
-- **Obsidian Vault**: Markdown graph notes in `graphify-out/obsidian/`.
-- **CLI Graph Queries**:
-  ```bash
-  # Query components and connections
-  graphify query "context memory"
-  
-  # Deep-dive into specific abstractions
-  graphify explain "build_context"
-  graphify explain "TenantGraphStorage"
-  ```
-
----
-
-## ☁️ GCP Deployment Architecture
-
-```
-Internet → Cloud Load Balancer → Cloud Run (Frontend)
-                                → Cloud Run (Backend)
-                                → Cloud SQL (PostgreSQL)
-
-Supporting services:
-- Cloud Storage (documents)
-- Secret Manager (credentials)
-- Cloud Logging & Monitoring
-- Pub/Sub (async events)
-- Cloud Scheduler (cron jobs)
-```
-
-Local development does NOT require GCP credentials.
-
----
-
-## 📁 Project Structure
-
-```
-aiia-ctms/
-├── frontend/           # Next.js 14 + React + TypeScript
-│   ├── app/           # App Router pages (Dashboard, Study Walkthrough, etc.)
-│   ├── components/    # UI components (DemoRecordPanel, Charts, Forms)
-│   ├── lib/           # Utilities, API client, auth
-│   └── types/         # TypeScript types
-├── backend/            # FastAPI + Python
-│   ├── app/
-│   │   ├── api/       # REST API routes (V1 endpoints, Memory, Demo)
-│   │   ├── core/      # Config, security, database
-│   │   ├── memory/    # Graphify Context Memory Engine
-│   │   │   ├── context/     # Context builder
-│   │   │   ├── extraction/  # Fact & preference extractor
-│   │   │   ├── graph/       # Graphify adapter & tenant storage
-│   │   │   ├── middleware/  # Agent conversation lifecycle
-│   │   │   ├── privacy/     # Tenant isolation & forgetting
-│   │   │   ├── ranking/     # Multi-factor node ranker
-│   │   │   └── types/       # Enums, models & schemas
-│   │   ├── models/    # SQLAlchemy models
-│   │   ├── schemas/   # Pydantic schemas
-│   │   ├── services/  # Business logic
-│   │   └── seed.py    # Database & notification seeder
-│   ├── tests/         # Unit & memory system test suite
-│   ├── data/memory/   # Tenant-isolated JSON graph storage
-│   └── alembic/       # Database migrations
-├── graphify-out/       # Graphify outputs (graph.html, graph.json, GRAPH_REPORT.md)
-├── docs/               # Architecture & database documentation
-├── infra/              # Infrastructure configs
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
----
-
-## ⚠️ Known Limitations
-
-1. **Authentication**: MFA is architecturally supported but not implemented in MVP
-2. **Real-time**: Uses polling; WebSocket/SSE can be added
-3. **CDISC**: SDTM export covers DM, SV, AE domains; extensible for more
-4. **FHIR**: Core resources implemented; full FHIR server not included
-5. **CTRI**: Tracking/workflow layer only — no direct CTRI API integration
-6. **Email/SMS**: Console backend for development; provider abstraction ready
-7. **File Storage**: Local storage for development; GCS abstraction ready
-8. **Regulatory**: Configurable compliance workflows, not legal certification
-
----
-
-## 📄 License
-
-Proprietary - AIIA (All India Institute of Ayurveda)
-
----
-
-## 🏥 Compliance Disclaimer
-
-This platform is designed to support GCP-aligned clinical research workflows for Ayurveda studies. It provides configurable compliance tracking for regulatory requirements including NDCT Rules 2019, CTRI registration, and ethics committee workflows.
-
-**This software does not constitute legal or regulatory certification.** Regulatory requirements are configurable and should be validated by qualified regulatory professionals. The system supports compliance workflows but organizations must ensure their own regulatory compliance.
+This project was developed as an academic software engineering demonstration of Clinical Trial Management Systems for Ayurveda research. While designed in alignment with Good Clinical Practice (GCP) principles and Indian New Drugs and Clinical Trials (NDCT) Rules 2019 data structures, **this system is not certified as medical device software or a legally certified regulatory submission repository**. The operational AI assistant provides workflow tracking and does not perform medical diagnosis or clinical decision-making.

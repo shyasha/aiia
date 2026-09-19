@@ -15,6 +15,7 @@ class AdverseEventCreate(BaseModel):
     expectedness: str = "EXPECTED"
     action_taken: Optional[str] = None
     outcome: str = "UNKNOWN"
+    suspected_causative_drug_id: Optional[str] = None
 
 class AdverseEventUpdate(BaseModel):
     resolution_date: Optional[date] = None
@@ -24,6 +25,7 @@ class AdverseEventUpdate(BaseModel):
     outcome: Optional[str] = None
     status: Optional[str] = None
     action_taken: Optional[str] = None
+    suspected_causative_drug_id: Optional[str] = None
 
 class SAECreate(BaseModel):
     adverse_event_id: str
@@ -58,6 +60,9 @@ class AdverseEventOut(BaseModel):
     outcome: str
     status: str
     reported_date: Optional[date] = None
+    suspected_causative_drug_id: Optional[str] = None
+    suspected_drug_name: Optional[str] = None  # resolved from the relationship
+
     class Config:
         from_attributes = True
 

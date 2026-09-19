@@ -1,4 +1,6 @@
-import random, string
+import logging
+import random
+import string
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +11,19 @@ from app.models.pharmacovigilance import AdverseEvent, SeriousAdverseEvent, Caus
 from app.schemas.pharmacovigilance import AdverseEventCreate, AdverseEventUpdate, SAECreate, SAEUpdate, CausalityAssessmentCreate, AdverseEventOut, SAEOut, SafetySignalOut
 from typing import List, Optional
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/pharmacovigilance", tags=["Pharmacovigilance"])
+
+
+
+def _ae_out(ae: AdverseEvent) -> AdverseEventOut:
+    """Serialize an AdverseEvent ORM instance, resolving the drug name from the relationship."""
+    data = AdverseEventOut.model_validate(ae)
+    if ae.suspected_drug:
+        data.suspected_drug_name = ae.suspected_drug.name
+    return data
+
 
 @router.get("/adverse-events", response_model=List[AdverseEventOut])
 async def list_aes(trial_id: Optional[str] = None, severity: Optional[str] = None, seriousness: Optional[str] = None, status: Optional[str] = None, skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
@@ -23,7 +37,7 @@ async def list_aes(trial_id: Optional[str] = None, severity: Optional[str] = Non
     if status:
         query = query.where(AdverseEvent.status == status)
     result = await db.execute(query.order_by(AdverseEvent.reported_date.desc()).offset(skip).limit(limit))
-    return result.scalars().all()
+    return [_ae_out(ae) for ae in result.scalars().all()]
 
 @router.post("/adverse-events", response_model=AdverseEventOut)
 async def create_ae(data: AdverseEventCreate, db: AsyncSession = Depends(get_db), current_user = Depends(require_roles("SUPER_ADMIN", "PRINCIPAL_INVESTIGATOR", "STUDY_COORDINATOR", "PHARMACOVIGILANCE_OFFICER"))):
@@ -31,7 +45,7 @@ async def create_ae(data: AdverseEventCreate, db: AsyncSession = Depends(get_db)
     db.add(ae)
     await db.commit()
     await db.refresh(ae)
-    return ae
+    return _ae_out(ae)
 
 @router.put("/adverse-events/{ae_id}", response_model=AdverseEventOut)
 async def update_ae(ae_id: str, data: AdverseEventUpdate, db: AsyncSession = Depends(get_db), current_user = Depends(require_roles("SUPER_ADMIN", "PRINCIPAL_INVESTIGATOR", "PHARMACOVIGILANCE_OFFICER"))):
@@ -42,7 +56,8 @@ async def update_ae(ae_id: str, data: AdverseEventUpdate, db: AsyncSession = Dep
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(ae, key, value)
     await db.commit()
-    return ae
+    await db.refresh(ae)
+    return _ae_out(ae)
 
 @router.get("/serious-adverse-events", response_model=List[SAEOut])
 async def list_saes(status: Optional[str] = None, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):

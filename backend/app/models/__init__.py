@@ -8,6 +8,7 @@ from app.models.form import Form, FormField, FormSubmission, DataPoint, DataQuer
 from app.models.ethics import EthicsCommittee, EthicsSubmission, EthicsReview, EthicsApproval, ProtocolAmendment
 from app.models.regulatory import RegulatoryRecord, RegulatoryChecklist
 from app.models.pharmacovigilance import AdverseEvent, SeriousAdverseEvent, CausalityAssessment, SafetySignal
+from app.models.workflow_alert import WorkflowAlert
 from app.models.document import Document
 from app.models.audit import AuditLog
 from app.models.notification import Notification

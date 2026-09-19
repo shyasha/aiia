@@ -22,10 +22,13 @@ class AdverseEvent(BaseModel):
     reporter_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     reported_date = Column(Date, nullable=True)
     status = Column(String(20), default="REPORTED", index=True)
-    
+    # Manually recorded by coordinator/investigator — NOT AI-generated
+    suspected_causative_drug_id = Column(String(36), ForeignKey("interventions.id"), nullable=True)
+
     participant = relationship("Participant", back_populates="adverse_events")
     trial = relationship("Trial")
     site = relationship("Site")
+    suspected_drug = relationship("Intervention", lazy="selectin")
 
 class SeriousAdverseEvent(BaseModel):
     __tablename__ = "serious_adverse_events"

@@ -178,6 +178,11 @@ async def seed_data():
         ]
         db.add_all(interventions)
         await db.flush()
+        # Map trial → primary drug intervention (first Drug-type per trial) for demo causative drug data
+        trial_primary_drug: dict = {}
+        for iv in interventions:
+            if iv.type == "Drug" and iv.trial_id not in trial_primary_drug:
+                trial_primary_drug[iv.trial_id] = iv.id
         
         # Milestones
         print("Seeding milestones...")
@@ -508,6 +513,7 @@ async def seed_data():
                 outcome=ae_data[4], reporter_id=users["PRINCIPAL_INVESTIGATOR"].id,
                 reported_date=date.today() - timedelta(days=random.randint(3, 145)),
                 status="REPORTED",
+                suspected_causative_drug_id=trial_primary_drug.get(p.trial_id) if ae_data[3] in ("POSSIBLE", "PROBABLE", "DEFINITE") else None,
             )
             db.add(ae)
             aes.append(ae)

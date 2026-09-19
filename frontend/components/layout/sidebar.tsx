@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, FileText, LayoutPanelTop, BadgeCheck, ShieldCheck, Activity, ShieldAlert, Database, ChevronRight } from "lucide-react";
+import { BookOpen, Bot, FileText, LayoutPanelTop, BadgeCheck, ShieldCheck, Activity, ShieldAlert, Database, ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
   { name: "Workspace", href: "/dashboard", icon: LayoutPanelTop },
   { name: "Study record", href: "/dashboard/study", icon: FileText },
+  { name: "Pharmacovigilance", href: "/dashboard/pharmacovigilance", icon: ShieldAlert },
+  { name: "AI Co-Pilot", href: "/dashboard/copilot", icon: Bot },
 ];
 
 const demoWorkflows = [

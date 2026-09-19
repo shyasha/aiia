@@ -6,7 +6,7 @@ from app.core.security import get_current_user, require_roles
 from app.models.trial import Trial, StudyArm, Intervention, TrialMilestone
 from app.models.participant import Participant
 from app.models.site import SiteAssignment
-from app.schemas.trial import TrialCreate, TrialUpdate, TrialOut, StudyArmCreate, InterventionCreate, MilestoneCreate, StudyArmOut
+from app.schemas.trial import TrialCreate, TrialUpdate, TrialOut, StudyArmCreate, InterventionCreate, MilestoneCreate, StudyArmOut, InterventionOut
 from typing import List, Optional
 
 router = APIRouter(prefix="/trials", tags=["Trials"])
@@ -88,3 +88,9 @@ async def create_study_arm(trial_id: str, data: StudyArmCreate, db: AsyncSession
     await db.commit()
     await db.refresh(arm)
     return arm
+
+@router.get("/{trial_id}/interventions", response_model=List[InterventionOut])
+async def get_trial_interventions(trial_id: str, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+    """Return all interventions for a trial — used to populate the causative drug dropdown on AE forms."""
+    result = await db.execute(select(Intervention).where(Intervention.trial_id == trial_id))
+    return result.scalars().all()

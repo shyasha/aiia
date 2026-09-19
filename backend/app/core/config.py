@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     STORAGE_BACKEND: str = "local"
     STORAGE_LOCAL_PATH: str = "./storage"
 
+    ANTHROPIC_API_KEY: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @field_validator("CORS_ORIGINS", "ALLOWED_HOSTS", mode="before")
