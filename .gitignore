@@ -46,7 +46,9 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
-aiia_ctms.db
+# Allow pre-seeded demo database to be tracked by Git
+!aiia_ctms.db
+!backend/aiia_ctms.db
 
 # =============================================================================
 # Storage, Uploads & Memory Data
