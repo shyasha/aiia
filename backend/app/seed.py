@@ -192,6 +192,8 @@ async def seed_data():
                 TrialMilestone(trial_id=t.id, name="Ethics Approval", planned_date=t.start_date - timedelta(days=30), actual_date=t.start_date - timedelta(days=25) if t.status != "ETHICS_PENDING" else None, status="COMPLETED" if t.status != "ETHICS_PENDING" else "PENDING"),
                 TrialMilestone(trial_id=t.id, name="CTRI Registration", planned_date=t.start_date - timedelta(days=15), status="COMPLETED" if t.registration_number else "PENDING"),
                 TrialMilestone(trial_id=t.id, name="First Patient In", planned_date=t.start_date, status="COMPLETED" if t.status in ("RECRUITING", "ACTIVE") else "PENDING"),
+                TrialMilestone(trial_id=t.id, name="Interim Safety Data Cut", planned_date=date.today() - timedelta(days=3), status="PENDING", notes="Overdue pending cross-site data reconciliation"),
+                TrialMilestone(trial_id=t.id, name="50% Cohort Monitoring Audit", planned_date=date.today() + timedelta(days=4), status="PENDING", notes="Approaching deadline for quarterly monitoring"),
                 TrialMilestone(trial_id=t.id, name="50% Enrollment", planned_date=t.start_date + timedelta(days=120), status="PENDING"),
                 TrialMilestone(trial_id=t.id, name="Last Patient Out", planned_date=t.expected_end_date, status="PENDING"),
             ]
@@ -344,6 +346,41 @@ async def seed_data():
                     
                     pv = ParticipantVisit(participant_id=p.id, visit_definition_id=vd.id, visit_name=vd.visit_name, scheduled_date=sched_date, actual_date=actual, status=st, completed_by=users["STUDY_COORDINATOR"].id if st == "COMPLETED" else None)
                     db.add(pv)
+
+        # Explicit demo overdue visits across multiple trials/participants
+        active_parts = [p for p in participants if p.status in ("ENROLLED", "RANDOMIZED", "ACTIVE")]
+        if len(active_parts) >= 3:
+            explicit_overdue_visits = [
+                {
+                    "part": active_parts[0],
+                    "vname": "Week 4 Clinical & Lab Assessment",
+                    "days_ago": 5,
+                    "status": "OVERDUE",
+                },
+                {
+                    "part": active_parts[1],
+                    "vname": "Week 8 Vital Signs & Fasting Glucose",
+                    "days_ago": 3,
+                    "status": "SCHEDULED",
+                },
+                {
+                    "part": active_parts[2],
+                    "vname": "Week 12 Efficacy & Biomarker Endpoint",
+                    "days_ago": 2,
+                    "status": "OVERDUE",
+                },
+            ]
+            for ov in explicit_overdue_visits:
+                db.add(ParticipantVisit(
+                    participant_id=ov["part"].id,
+                    visit_definition_id=visit_defs.get(ov["part"].trial_id, [None])[0].id if visit_defs.get(ov["part"].trial_id) else None,
+                    visit_name=ov["vname"],
+                    scheduled_date=date.today() - timedelta(days=ov["days_ago"]),
+                    actual_date=None,
+                    status=ov["status"],
+                    notes="Flagged for coordinator phone follow-up",
+                ))
+
         await db.flush()
         
         # Forms
@@ -517,6 +554,65 @@ async def seed_data():
             )
             db.add(ae)
             aes.append(ae)
+
+        # Explicit demo Adverse Events exceeding the 5-day review window
+        demo_pending_aes = [
+            {
+                "term": "Persistent joint swelling and localized erythema",
+                "desc": "Participant reported persistent effusion and swelling in right knee joint post-treatment session.",
+                "days_ago": 9,
+                "sev": "MODERATE",
+                "ser": "NON_SERIOUS",
+                "caus": "POSSIBLE",
+                "trial": trials[0],
+                "site": sites[0],
+            },
+            {
+                "term": "Recurrent abdominal cramping post-dose",
+                "desc": "Recurrent mild to moderate epigastric pain and cramping reported 30 mins after taking evening dose.",
+                "days_ago": 7,
+                "sev": "MODERATE",
+                "ser": "NON_SERIOUS",
+                "caus": "PROBABLE",
+                "trial": trials[1],
+                "site": sites[1],
+            },
+            {
+                "term": "Mild dizziness and headache",
+                "desc": "Episodes of lightheadedness and frontal headache observed during morning ambulatory monitoring.",
+                "days_ago": 6,
+                "sev": "MILD",
+                "ser": "NON_SERIOUS",
+                "caus": "POSSIBLE",
+                "trial": trials[0],
+                "site": sites[2],
+            },
+        ]
+        for item in demo_pending_aes:
+            # Pick a participant matching trial or first available
+            matching_part = next((pt for pt in participants if pt.trial_id == item["trial"].id), participants[0])
+            ae_explicit = AdverseEvent(
+                participant_id=matching_part.id,
+                trial_id=item["trial"].id,
+                site_id=item["site"].id,
+                event_term=item["term"],
+                description=item["desc"],
+                onset_date=date.today() - timedelta(days=item["days_ago"] + 2),
+                resolution_date=None,
+                severity=item["sev"],
+                seriousness=item["ser"],
+                causality=item["caus"],
+                expectedness="UNEXPECTED",
+                action_taken="Pending PI Clinical Evaluation",
+                outcome="NOT_RECOVERED",
+                reporter_id=users["PRINCIPAL_INVESTIGATOR"].id,
+                reported_date=date.today() - timedelta(days=item["days_ago"]),
+                status="REPORTED",
+                suspected_causative_drug_id=trial_primary_drug.get(item["trial"].id),
+            )
+            db.add(ae_explicit)
+            aes.append(ae_explicit)
+
         await db.flush()
         
         # SAEs

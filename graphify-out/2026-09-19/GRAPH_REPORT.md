@@ -1,12 +1,12 @@
 # Graph Report - aiia  (2026-09-19)
 
 ## Corpus Check
-- 153 files · ~62,336 words
+- 153 files · ~62,444 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 10 file(s) not represented in the graph (top: (none) 4, .example 3, .ini 1)
 
 ## Summary
-- 920 nodes · 2406 edges · 64 communities (44 shown, 20 thin omitted)
+- 920 nodes · 2408 edges · 64 communities (45 shown, 19 thin omitted)
 - Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 258 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
@@ -30,7 +30,7 @@
 - api.ts
 - v1/regulatory.py
 - trials.py
-- demo-record-panel.tsx
+- ref_next_link
 - package.json
 - compilerOptions
 - visits.py
@@ -73,6 +73,7 @@
 - list_notifications
 - rate_limit.py
 - log_requests
+- pharmacovigilance/page.tsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `BaseModel` - 145 edges
@@ -101,7 +102,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (64 total, 20 thin omitted)
+## Communities (64 total, 19 thin omitted)
 
 ### Community 0 - "BaseModel"
 Cohesion: 0.12
@@ -112,8 +113,8 @@ Cohesion: 0.23
 Nodes (18): create_investigator(), create_site(), create_site_assignment(), get_site(), list_investigators(), list_sites(), AsyncSession, get (+10 more)
 
 ### Community 2 - "react"
-Cohesion: 0.18
-Nodes (14): AuditPage(), ParticipantDetail(), ParticipantsPage(), EMPTY_FORM, Intervention, PharmacovigilancePage(), Trial, SitesPage() (+6 more)
+Cohesion: 0.22
+Nodes (10): AuditPage(), ParticipantDetail(), ParticipantsPage(), SitesPage(), TrialDetailPage(), TrialsPage(), api, formatDate() (+2 more)
 
 ### Community 3 - "AIIA Clinical Trials Dashboard (CTMS)"
 Cohesion: 0.05
@@ -148,8 +149,8 @@ Cohesion: 0.13
 Nodes (17): app_memory_ranking_ranker, app_memory_retrieval_search, build_context(), Any, Build structured context package for a given user message. Returns dictionary…, MultiFactorRanker, Any, Graph (+9 more)
 
 ### Community 11 - "api.ts"
-Cohesion: 0.14
-Nodes (10): DashboardLayout(), LoginPage(), Home(), Topbar(), getUser(), isAuthenticated(), login(), logout() (+2 more)
+Cohesion: 0.15
+Nodes (6): DashboardLayout(), LoginPage(), Home(), isAuthenticated(), login(), ref_next_navigation
 
 ### Community 12 - "v1/regulatory.py"
 Cohesion: 0.22
@@ -159,9 +160,9 @@ Nodes (17): create_checklist_item(), create_record(), list_checklists(), list_re
 Cohesion: 0.19
 Nodes (21): create_study_arm(), create_trial(), get_trial(), get_trial_arms(), get_trial_interventions(), list_trials(), AsyncSession, get (+13 more)
 
-### Community 14 - "demo-record-panel.tsx"
-Cohesion: 0.16
-Nodes (4): DemoRecord, DemoRecordPanel(), RECORD_NAV, RecordItem
+### Community 14 - "ref_next_link"
+Cohesion: 0.14
+Nodes (7): DemoRecord, DemoRecordPanel(), RECORD_NAV, RecordItem, Topbar(), logout(), ref_next_link
 
 ### Community 15 - "package.json"
 Cohesion: 0.04
@@ -279,10 +280,14 @@ Nodes (4): InMemoryRateLimiter, collections, threading, time
 Cohesion: 0.67
 Nodes (3): log_requests(), Request, middleware
 
+### Community 63 - "pharmacovigilance/page.tsx"
+Cohesion: 0.40
+Nodes (5): EMPTY_FORM, Intervention, PharmacovigilancePage(), Trial, getUser()
+
 ## Knowledge Gaps
 - **117 isolated node(s):** `Config`, `Config`, `Config`, `Config`, `Config` (+112 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 304 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_

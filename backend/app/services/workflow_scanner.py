@@ -137,21 +137,57 @@ async def scan_and_generate_alerts(db: AsyncSession) -> list[dict]:
         + "\n".join(summary_lines)
     )
 
-    # Call Claude
+    # Call Claude with fallback for offline / demo mode
     raw = ""
+    alerts_data: list[dict] = []
     try:
         raw = await ask_claude(prompt, system_prompt=_WORKFLOW_SYSTEM_PROMPT)
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-        alerts_data: list[dict] = json.loads(cleaned)
-    except json.JSONDecodeError:
-        logger.warning("Workflow scanner: Claude response not valid JSON: %r", raw[:300])
-        return []
-    except RuntimeError as exc:
-        logger.warning("Workflow scanner: AI service unavailable: %s", exc)
-        return []
+        alerts_data = json.loads(cleaned)
     except Exception as exc:
-        logger.warning("Workflow scanner: unexpected error: %s", exc)
-        return []
+        logger.warning("Workflow scanner: AI service unavailable (%s) — using operational rule engine for demo alerts", exc)
+        # Operational rule-based fallback for demo environments without active API key
+        for item in flagged_items:
+            etype = item.get("entity_type")
+            eid = item.get("entity_id")
+            if etype == "AE":
+                days = item.get("days_pending", 0)
+                sev = "high" if days >= 8 else "medium"
+                alerts_data.append({
+                    "entity_type": "AE",
+                    "entity_id": eid,
+                    "alert_type": "bottleneck",
+                    "message": f"AE '{item.get('label')}' (Participant {item.get('participant_id')[:8]}) pending review for {days} days — exceeds internal 5-day review window.",
+                    "severity": sev,
+                })
+            elif etype == "Visit":
+                days = item.get("days_overdue", 0)
+                sev = "high" if days >= 5 else "medium" if days >= 3 else "low"
+                alerts_data.append({
+                    "entity_type": "Visit",
+                    "entity_id": eid,
+                    "alert_type": "delay",
+                    "message": f"{item.get('label')} for Participant {item.get('participant_id')[:8]} is {days} day(s) overdue (scheduled {item.get('scheduled_date')}).",
+                    "severity": sev,
+                })
+            elif etype == "Milestone":
+                days_left = item.get("days_until_due", 0)
+                if days_left < 0:
+                    alerts_data.append({
+                        "entity_type": "Milestone",
+                        "entity_id": eid,
+                        "alert_type": "deadline_risk",
+                        "message": f"Trial milestone '{item.get('label')}' is {abs(days_left)} day(s) past due target date ({item.get('planned_date')}).",
+                        "severity": "high",
+                    })
+                else:
+                    alerts_data.append({
+                        "entity_type": "Milestone",
+                        "entity_id": eid,
+                        "alert_type": "deadline_risk",
+                        "message": f"Trial milestone '{item.get('label')}' due in {days_left} day(s) ({item.get('planned_date')}) — action required.",
+                        "severity": "medium" if days_left <= 3 else "low",
+                    })
 
     # Validate and normalise
     valid_entity_types = {"AE", "Visit", "Milestone"}

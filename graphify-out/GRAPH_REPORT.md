@@ -1,7 +1,7 @@
 # Graph Report - aiia  (2026-09-19)
 
 ## Corpus Check
-- 153 files · ~62,444 words
+- 153 files · ~62,660 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 10 file(s) not represented in the graph (top: (none) 4, .example 3, .ini 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `db1ab351`
+- Built from commit: `4b814376`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

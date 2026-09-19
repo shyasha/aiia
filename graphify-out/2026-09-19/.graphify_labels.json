@@ -13,7 +13,7 @@
   "11": "api.ts",
   "12": "v1/regulatory.py",
   "13": "trials.py",
-  "14": "demo-record-panel.tsx",
+  "14": "ref_next_link",
   "15": "package.json",
   "16": "compilerOptions",
   "17": "visits.py",
@@ -62,5 +62,5 @@
   "60": "list_notifications",
   "61": "rate_limit.py",
   "62": "log_requests",
-  "63": "clinical-data/page.tsx"
+  "63": "pharmacovigilance/page.tsx"
 }
